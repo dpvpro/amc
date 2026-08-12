@@ -101,7 +101,7 @@ func parseFlags(argv []string) (*Options, error) {
 	fs.StringVar(&opts.URL, "url", defaultURL, "URL of the mirror status JSON")
 	fs.StringVar(&opts.Save, "save", "", "write the mirrorlist to this path instead of stdout")
 	fs.StringVar(&opts.Sort, "sort", "", "sort by age, rate, country, score or delay")
-	fs.IntVar(&opts.Threads, "threads", 4, "number of parallel rating downloads (0 = sequential)")
+	fs.IntVar(&opts.Threads, "threads", 8, "number of parallel rating downloads (0 = sequential)")
 	fs.BoolVar(&opts.Verbose, "verbose", false, "print extra information to stderr")
 	fs.BoolVar(&opts.Info, "info", false, "print mirror information instead of a mirror list")
 	fs.BoolVar(&opts.ListCountries, "list-countries", false, "list countries with a mirror count and exit")
