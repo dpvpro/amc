@@ -1,0 +1,293 @@
+package main
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+func loadFixture(t *testing.T) *MirrorStatus {
+	t.Helper()
+	data, err := os.ReadFile("testdata/mirrorstatus.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ms MirrorStatus
+	if err := json.Unmarshal(data, &ms); err != nil {
+		t.Fatal(err)
+	}
+	return &ms
+}
+
+func baseOpts() *Options { return &Options{CompletionPercent: 100} }
+
+func mirror(url string) Mirror {
+	ls := "2026-08-12T03:50:00Z"
+	return Mirror{URL: url, Protocol: "https", LastSync: &ls, CompletionPct: 1.0}
+}
+
+func urls(mirrors []Mirror) []string {
+	out := make([]string, 0, len(mirrors))
+	for _, m := range mirrors {
+		out = append(out, m.URL)
+	}
+	return out
+}
+
+func assertUrls(t *testing.T, got []Mirror, want []string) {
+	t.Helper()
+	g := strings.Join(urls(got), ",")
+	w := strings.Join(want, ",")
+	if g != w {
+		t.Errorf("got %q, want %q", g, w)
+	}
+}
+
+func TestFilterCountries(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.CompletionPercent = 0
+	opts.Countries = []string{"France", "de"}
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.de.archlinux.org/archlinux/",
+	})
+}
+
+func TestFilterProtocol(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.Protocols = []string{"https"}
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+	})
+}
+
+func TestFilterCompletion(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.CompletionPercent = 90
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.de.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+		"http://mirror.es.archlinux.org/archlinux/",
+	})
+}
+
+func TestFilterExclude(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.Exclude = []string{`\.us\.`}
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"http://mirror.es.archlinux.org/archlinux/",
+	})
+}
+
+func TestFilterIsos(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.Isos = true
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+	})
+}
+
+func TestFilterAge(t *testing.T) {
+	now := time.Now()
+	recent := now.Add(-1 * time.Hour)
+	old := now.Add(-10 * time.Hour)
+	makeMirror := func(u string, sync time.Time) Mirror {
+		s := sync.UTC().Format("2006-01-02T15:04:05Z")
+		return Mirror{URL: u, Protocol: "https", LastSync: &s, CompletionPct: 1.0}
+	}
+	mirrors := []Mirror{makeMirror("https://a/", recent), makeMirror("https://b/", old)}
+
+	opts := baseOpts()
+	opts.Age = 2
+	out, err := applyFilters(mirrors, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{"https://a/"})
+}
+
+func TestFilterNullLastSync(t *testing.T) {
+	mirrors := []Mirror{{URL: "https://a/", LastSync: nil, CompletionPct: 1.0}}
+	out, err := applyFilters(mirrors, baseOpts())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 0 {
+		t.Errorf("mirror with null last_sync should be filtered, got %d", len(out))
+	}
+}
+
+func TestSortAge(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sortMirrors(out, "age", nil)
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+		"http://mirror.es.archlinux.org/archlinux/",
+	})
+}
+
+func TestSortScore(t *testing.T) {
+	ms := loadFixture(t)
+	out, err := applyFilters(ms.URLs, baseOpts())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sortMirrors(out, "score", nil)
+	assertUrls(t, out, []string{
+		"http://mirror.es.archlinux.org/archlinux/",
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+	})
+}
+
+func TestSortCountryPriority(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.Countries = []string{"US", "FR"}
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sortMirrors(out, "country", opts.Countries)
+	assertUrls(t, out, []string{
+		"https://mirror.us.archlinux.org/archlinux/",
+		"https://mirror.fr.archlinux.org/archlinux/",
+	})
+}
+
+func TestFormatMirrorlist(t *testing.T) {
+	ms := loadFixture(t)
+	mirrors := ms.URLs[:2]
+	out := formatMirrorlist(ms, mirrors, time.Now(), baseOpts(), []string{"--protocol", "https"})
+	if !strings.Contains(out, "generated by Reflector") {
+		t.Errorf("missing header: %q", out)
+	}
+	if !strings.Contains(out, "Server = https://mirror.fr.archlinux.org/archlinux/$repo/os/$arch") {
+		t.Errorf("missing server line: %q", out)
+	}
+}
+
+func TestFormatMirrorlistCountrySections(t *testing.T) {
+	ms := loadFixture(t)
+	opts := baseOpts()
+	opts.Sort = "country"
+	out := formatMirrorlist(ms, ms.URLs[:3], time.Now(), opts, nil)
+	for _, want := range []string{"# France [FR]", "# Germany [DE]", "# United States [US]"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing country section %q", want)
+		}
+	}
+}
+
+func TestFormatCountries(t *testing.T) {
+	ms := loadFixture(t)
+	out := formatCountries(ms.URLs)
+	if !strings.Contains(out, "Country") || !strings.Contains(out, "United States") {
+		t.Errorf("unexpected table: %q", out)
+	}
+	if !strings.Contains(out, "Australia") {
+		t.Errorf("missing unsynced mirror country: %q", out)
+	}
+}
+
+func TestFormatMirrorInfo(t *testing.T) {
+	ms := loadFixture(t)
+	out := formatMirrorInfo(ms.URLs[:1])
+	if !strings.Contains(out, "country : France") {
+		t.Errorf("missing info field: %q", out)
+	}
+	if !strings.Contains(out, "last_sync : 2026-08-12 03:50:00 UTC") {
+		t.Errorf("last_sync not formatted: %q", out)
+	}
+}
+
+func TestParseFlagsAliases(t *testing.T) {
+	opts, err := parseFlags([]string{"-a", "1", "-c", "FR,DE", "-l", "5", "-p", "https,http"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.Age != 1 || opts.Latest != 5 {
+		t.Errorf("aliases not applied: %+v", opts)
+	}
+	if strings.Join(opts.Countries, ",") != "FR,DE" {
+		t.Errorf("countries: %v", opts.Countries)
+	}
+	if strings.Join(opts.Protocols, ",") != "https,http" {
+		t.Errorf("protocols: %v", opts.Protocols)
+	}
+}
+
+func TestParseFlagsError(t *testing.T) {
+	if _, err := parseFlags([]string{"--age", "x"}); err == nil {
+		t.Error("expected error for invalid int")
+	}
+	if _, err := parseFlags([]string{"positional"}); err == nil {
+		t.Error("expected error for positional argument")
+	}
+}
+
+func TestLoadConfigTokens(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "reflector.conf")
+	content := "# comment\n\n--save /tmp/mirrorlist\n--protocol \"https,http\"\n--latest 5\n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tokens, err := loadConfigTokens(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(tokens, " ")
+	want := "--save /tmp/mirrorlist --protocol https,http --latest 5"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestExtractConfigArg(t *testing.T) {
+	cfg, rest := extractConfigArg([]string{"--save", "x", "-config", "/etc/c", "--latest"})
+	if cfg != "/etc/c" {
+		t.Errorf("cfg: %q", cfg)
+	}
+	if strings.Join(rest, " ") != "--save x --latest" {
+		t.Errorf("rest: %v", rest)
+	}
+}
