@@ -1,5 +1,5 @@
 [Unit]
-Description=Refresh Pacman mirrorlist weekly with Reflector.
+Description=Refresh Pacman mirrorlist weekly with reflector-go.
 
 [Timer]
 OnCalendar=weekly

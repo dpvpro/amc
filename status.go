@@ -69,7 +69,7 @@ func cachePathFor(url string) string {
 		return filepath.Join(base, "mirrorstatus.json")
 	}
 	name := base64.RawURLEncoding.EncodeToString([]byte(url)) + ".json"
-	return filepath.Join(base, "reflector", name)
+	return filepath.Join(base, "reflector-go", name)
 }
 
 // fetchStatus retrieves the mirror status, reusing a local cache within the
