@@ -100,7 +100,7 @@ func rateHTTP(ctx context.Context, mirrorURL string, opts *Options) (float64, fl
 // rateRSync downloads the database via the system rsync binary and returns
 // elapsed time and bytes per second.
 func rateRSync(ctx context.Context, mirrorURL string, opts *Options) (float64, float64, error) {
-	tmp, err := os.MkdirTemp("", "reflector-go-rsync-")
+	tmp, err := os.MkdirTemp("", "amc-rsync-")
 	if err != nil {
 		return 0, 0, err
 	}

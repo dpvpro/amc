@@ -90,7 +90,7 @@ func parseFlags(argv []string) (*Options, error) {
 		CompletionPercent: 100,
 	}
 
-	fs := flag.NewFlagSet("reflector-go", flag.ContinueOnError)
+	fs := flag.NewFlagSet("amc", flag.ContinueOnError)
 	// flag prints errors and usage itself; suppress that so this package
 	// controls the exact output and exit codes.
 	fs.SetOutput(io.Discard)
@@ -125,7 +125,7 @@ func parseFlags(argv []string) (*Options, error) {
 	fs.BoolVar(&opts.IPv6, "ipv6", false, "only mirrors that support IPv6")
 
 	if err := fs.Parse(expandAliases(argv)); err != nil {
-		usage := "Usage of reflector-go:\n" + flagDefaults(fs)
+		usage := "Usage of amc:\n" + flagDefaults(fs)
 		if err == flag.ErrHelp {
 			return nil, &helpRequested{usage: usage}
 		}

@@ -1,16 +1,15 @@
 [Unit]
-Description=Refresh Pacman mirrorlist with reflector-go.
-Documentation=https://wiki.archlinux.org/index.php/Reflector
+Description=Refresh Pacman mirrorlist with Arch Mirrors Checker.
 Wants=network-online.target
 After=network-online.target nss-lookup.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/reflector-go -config /etc/xdg/reflector-go/reflector-go.conf
-CacheDirectory=reflector-go
+ExecStart=/usr/bin/amc -config /etc/xdg/amc/amc.conf
+CacheDirectory=amc
 # CapabilityBoundingSet=~CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_SYS_ADMIN CAP_SYS_PTRACE CAP_CHOWN CAP_FSETID CAP_SETFCAP CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER CAP_IPC_OWNER CAP_NET_ADMIN CAP_SYS_TIME CAP_AUDIT_CONTROL CAP_AUDIT_READ CAP_AUDIT_WRITE CAP_KILL CAP_NET_BIND_SERVICE CAP_NET_BROADCAST CAP_NET_RAW CAP_SYS_NICE CAP_SYS_RESOURCE CAP_MAC_ADMIN CAP_MAC_OVERRIDE CAP_SYS_BOOT CAP_LINUX_IMMUTABLE CAP_IPC_LOCK CAP_SYS_CHROOT CAP_BLOCK_SUSPEND CAP_LEASE CAP_SYS_PACCT CAP_SYS_TTY_CONFIG CAP_WAKE_ALARM
 CapabilityBoundingSet=
-Environment=XDG_CACHE_HOME=/var/cache/reflector-go
+Environment=XDG_CACHE_HOME=/var/cache/amc
 LockPersonality=true
 MemoryDenyWriteExecute=true
 NoNewPrivileges=true
@@ -25,7 +24,7 @@ ProtectKernelTunables=true
 ProtectKernelLogs=true
 ProtectKernelModules=true
 ProtectSystem=strict
-ReadOnlyPaths=/etc/xdg/reflector-go/reflector-go.conf
+ReadOnlyPaths=/etc/xdg/amc/amc.conf
 ReadWritePaths=/etc/pacman.d/mirrorlist
 RemoveIPC=true
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

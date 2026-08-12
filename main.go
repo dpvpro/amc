@@ -18,7 +18,7 @@ func infof(opts *Options, format string, args ...any) {
 	}
 }
 
-// run executes the reflector-go pipeline and returns the exit code.
+// run executes the amc pipeline and returns the exit code.
 func run(argv []string) int {
 	cfg, rest := extractConfigArg(argv)
 	// fmt.Println(cfg, rest)
@@ -26,7 +26,7 @@ func run(argv []string) int {
 	if cfg != "" {
 		cfgTokens, err := loadConfigTokens(cfg)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "reflector-go: cannot read config %s: %v\n", cfg, err)
+			fmt.Fprintf(os.Stderr, "amc: cannot read config %s: %v\n", cfg, err)
 			return 1
 		}
 		tokens = append(tokens, cfgTokens...)
@@ -39,17 +39,17 @@ func run(argv []string) int {
 			fmt.Fprint(os.Stdout, hr.usage)
 			return 0
 		}
-		fmt.Fprintf(os.Stderr, "reflector-go: %v\n", err)
+		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
 		return 2
 	}
 	if opts.Sort != "" && !contains(sortChoices, opts.Sort) {
-		fmt.Fprintf(os.Stderr, "reflector-go: invalid sort criterion %q (choose from %v)\n", opts.Sort, sortChoices)
+		fmt.Fprintf(os.Stderr, "amc: invalid sort criterion %q (choose from %v)\n", opts.Sort, sortChoices)
 		return 2
 	}
 
 	status, retrieved, err := fetchStatus(opts)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "reflector-go: %v\n", err)
+		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
 		return 1
 	}
 
@@ -60,7 +60,7 @@ func run(argv []string) int {
 
 	mirrors, err := applyFilters(status.URLs, opts)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "reflector-go: %v\n", err)
+		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
 		return 2
 	}
 
@@ -96,7 +96,7 @@ func run(argv []string) int {
 
 	if opts.Info {
 		if len(mirrors) == 0 {
-			fmt.Fprintln(os.Stderr, "reflector-go: no mirrors found")
+			fmt.Fprintln(os.Stderr, "amc: no mirrors found")
 			return 1
 		}
 		fmt.Print(formatMirrorInfo(mirrors))
@@ -104,14 +104,14 @@ func run(argv []string) int {
 	}
 
 	if len(mirrors) == 0 {
-		fmt.Fprintln(os.Stderr, "reflector-go: no mirrors found")
+		fmt.Fprintln(os.Stderr, "amc: no mirrors found")
 		return 1
 	}
 
 	output := formatMirrorlist(status, mirrors, retrieved, opts, argv)
 	if opts.Save != "" {
 		if err := os.WriteFile(opts.Save, []byte(output), 0o644); err != nil {
-			fmt.Fprintf(os.Stderr, "reflector-go: %v\n", err)
+			fmt.Fprintf(os.Stderr, "amc: %v\n", err)
 			return 1
 		}
 		return 0
