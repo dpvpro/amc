@@ -166,7 +166,12 @@ func formatCountries(mirrors []Mirror) string {
 		}
 		list[index[k]].count++
 	}
-	sort.Slice(list, func(i, j int) bool { return list[i].country < list[j].country })
+	sort.Slice(list, func(i, j int) bool {
+		if list[i].count != list[j].count {
+			return list[i].count > list[j].count
+		}
+		return list[i].country < list[j].country
+	})
 
 	w0, w1, w2 := len("Country"), len("Code"), len("Count")
 	for _, e := range list {
@@ -188,5 +193,12 @@ func formatCountries(mirrors []Mirror) string {
 	for _, e := range list {
 		fmt.Fprintf(&b, "%-*s %*s %*d\n", w0, e.country, w1, e.code, w2, e.count)
 	}
+
+	totalServers := 0
+	for _, e := range list {
+		totalServers += e.count
+	}
+	fmt.Fprintf(&b, "\nTotal countries: %d\n", len(list))
+	fmt.Fprintf(&b, "Total servers:   %d\n", totalServers)
 	return b.String()
 }

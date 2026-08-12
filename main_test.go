@@ -226,6 +226,33 @@ func TestFormatCountries(t *testing.T) {
 	if !strings.Contains(out, "Australia") {
 		t.Errorf("missing unsynced mirror country: %q", out)
 	}
+	if !strings.Contains(out, "Total countries: 5") {
+		t.Errorf("missing country total: %q", out)
+	}
+	if !strings.Contains(out, "Total servers:   5") {
+		t.Errorf("missing server total: %q", out)
+	}
+}
+
+func TestFormatCountriesSortedByCount(t *testing.T) {
+	mirrors := []Mirror{
+		{Country: "A", CountryCode: "AA"},
+		{Country: "B", CountryCode: "BB"},
+		{Country: "B", CountryCode: "BB"},
+		{Country: "C", CountryCode: "CC"},
+		{Country: "C", CountryCode: "CC"},
+		{Country: "C", CountryCode: "CC"},
+	}
+	out := formatCountries(mirrors)
+	posA := strings.Index(out, "\nA ")
+	posB := strings.Index(out, "\nB ")
+	posC := strings.Index(out, "\nC ")
+	if !(posC < posB && posB < posA) {
+		t.Errorf("expected order by count descending (C, B, A), got:\n%s", out)
+	}
+	if !strings.Contains(out, "Total countries: 3") || !strings.Contains(out, "Total servers:   6") {
+		t.Errorf("missing totals: %q", out)
+	}
 }
 
 func TestFormatMirrorInfo(t *testing.T) {
