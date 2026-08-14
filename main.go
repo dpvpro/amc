@@ -21,7 +21,6 @@ func infof(opts *Options, format string, args ...any) {
 // run executes the amc pipeline and returns the exit code.
 func run(argv []string) int {
 	cfg, rest := extractConfigArg(argv)
-	// fmt.Println(cfg, rest)
 	var tokens []string
 	if cfg != "" {
 		cfgTokens, err := loadConfigTokens(cfg)

@@ -266,19 +266,31 @@ func TestFormatMirrorInfo(t *testing.T) {
 	}
 }
 
-func TestParseFlagsAliases(t *testing.T) {
-	opts, err := parseFlags([]string{"-a", "1", "-c", "FR,DE", "-l", "5", "-p", "https,http"})
+func TestParseFlagsLong(t *testing.T) {
+	opts, err := parseFlags([]string{"--age", "1", "--country", "FR,DE", "--latest", "5", "--protocol", "https,http"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if opts.Age != 1 || opts.Latest != 5 {
-		t.Errorf("aliases not applied: %+v", opts)
+		t.Errorf("flags not applied: %+v", opts)
 	}
 	if strings.Join(opts.Countries, ",") != "FR,DE" {
 		t.Errorf("countries: %v", opts.Countries)
 	}
 	if strings.Join(opts.Protocols, ",") != "https,http" {
 		t.Errorf("protocols: %v", opts.Protocols)
+	}
+}
+
+func TestParseFlagsRejectsShortAliases(t *testing.T) {
+	for _, args := range [][]string{
+		{"-a", "1"},
+		{"-c", "FR"},
+		{"-l", "5"},
+	} {
+		if _, err := parseFlags(args); err == nil {
+			t.Errorf("expected error for short alias %v", args)
+		}
 	}
 }
 

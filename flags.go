@@ -12,8 +12,8 @@ import (
 // Default values.
 const (
 	defaultURL               = "https://archlinux.org/mirrors/status/json/"
-	defaultConnectionTimeout = 4
-	defaultDownloadTimeout   = 4
+	defaultConnectionTimeout = 8
+	defaultDownloadTimeout   = 8
 	defaultCacheTimeout      = 300
 )
 
@@ -66,20 +66,6 @@ func (l listValue) Set(v string) error {
 	return nil
 }
 
-// shortAliases maps single-dash shortcuts to the long flag names registered
-// with the flag package. They are expanded before parsing so that the
-// --help output stays short.
-var shortAliases = map[string]string{
-	"-a": "-age",
-	"-c": "-country",
-	"-f": "-fastest",
-	"-i": "-include",
-	"-l": "-latest",
-	"-n": "-number",
-	"-p": "-protocol",
-	"-x": "-exclude",
-}
-
 // parseFlags builds the flag set and parses argv, returning the options.
 func parseFlags(argv []string) (*Options, error) {
 	opts := &Options{
@@ -124,7 +110,7 @@ func parseFlags(argv []string) (*Options, error) {
 	fs.BoolVar(&opts.IPv4, "ipv4", false, "only mirrors that support IPv4")
 	fs.BoolVar(&opts.IPv6, "ipv6", false, "only mirrors that support IPv6")
 
-	if err := fs.Parse(expandAliases(argv)); err != nil {
+	if err := fs.Parse(argv); err != nil {
 		usage := "Usage of amc:\n" + flagDefaults(fs)
 		if err == flag.ErrHelp {
 			return nil, &helpRequested{usage: usage}
@@ -150,29 +136,6 @@ func flagDefaults(fs *flag.FlagSet) string {
 type helpRequested struct{ usage string }
 
 func (e *helpRequested) Error() string { return "help requested" }
-
-// expandAliases rewrites short option names to their long form.
-func expandAliases(argv []string) []string {
-	out := make([]string, 0, len(argv))
-	for _, t := range argv {
-		if long, ok := shortAliases[t]; ok {
-			out = append(out, long)
-			continue
-		}
-		replaced := false
-		for short, long := range shortAliases {
-			if after, ok := strings.CutPrefix(t, short+"="); ok {
-				out = append(out, long+"="+after)
-				replaced = true
-				break
-			}
-		}
-		if !replaced {
-			out = append(out, t)
-		}
-	}
-	return out
-}
 
 // extractConfigArg pulls the -config path out of argv (removing it) so the
 // config file tokens can be prepended before parsing.
