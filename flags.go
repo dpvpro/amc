@@ -15,6 +15,7 @@ const (
 	defaultConnectionTimeout = 8
 	defaultDownloadTimeout   = 8
 	defaultCacheTimeout      = 300
+	defaultConfigPath        = "/etc/xdg/amc/amc.conf"
 )
 
 // Options holds all parsed command-line options.
@@ -24,6 +25,7 @@ type Options struct {
 	CacheTimeout      int
 	URL               string
 	Save              string
+	Config            string
 	Sort              string
 	Threads           int
 	Verbose           bool
@@ -92,8 +94,7 @@ func parseFlags(argv []string) (*Options, error) {
 	fs.BoolVar(&opts.Info, "info", false, "print mirror information instead of a mirror list")
 	fs.BoolVar(&opts.ListCountries, "list-countries", false, "list countries with a mirror count and exit")
 
-	var configPath string
-	fs.StringVar(&configPath, "config", "", "read additional options from this config file")
+	fs.StringVar(&opts.Config, "config", defaultConfigPath, "read additional options from this config file")
 
 	fs.Float64Var(&opts.Age, "age", 0, "only mirrors synchronized in the last n hours")
 	fs.Float64Var(&opts.Delay, "delay", 0, "only mirrors with a reported sync delay of n hours or less")
@@ -136,30 +137,6 @@ func flagDefaults(fs *flag.FlagSet) string {
 type helpRequested struct{ usage string }
 
 func (e *helpRequested) Error() string { return "help requested" }
-
-// extractConfigArg pulls the -config path out of argv (removing it) so the
-// config file tokens can be prepended before parsing.
-func extractConfigArg(argv []string) (string, []string) {
-	var rest []string
-	cfg := ""
-	for i := 0; i < len(argv); i++ {
-		t := argv[i]
-		switch {
-		case t == "-config" || t == "--config":
-			if i+1 < len(argv) {
-				cfg = argv[i+1]
-				i++
-			}
-		case strings.HasPrefix(t, "--config="):
-			cfg = strings.TrimPrefix(t, "--config=")
-		case strings.HasPrefix(t, "-config="):
-			cfg = strings.TrimPrefix(t, "-config=")
-		default:
-			rest = append(rest, t)
-		}
-	}
-	return cfg, rest
-}
 
 // loadConfigTokens reads a config file: one flag per line, "#" comments and
 // quoted values are supported.

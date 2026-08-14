@@ -321,12 +321,47 @@ func TestLoadConfigTokens(t *testing.T) {
 	}
 }
 
-func TestExtractConfigArg(t *testing.T) {
-	cfg, rest := extractConfigArg([]string{"--save", "x", "-config", "/etc/c", "--latest"})
-	if cfg != "/etc/c" {
-		t.Errorf("cfg: %q", cfg)
+func TestConfigDefault(t *testing.T) {
+	opts, err := parseFlags(nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if strings.Join(rest, " ") != "--save x --latest" {
-		t.Errorf("rest: %v", rest)
+	if opts.Config != defaultConfigPath {
+		t.Errorf("default config: got %q, want %q", opts.Config, defaultConfigPath)
+	}
+}
+
+func TestConfigFlag(t *testing.T) {
+	opts, err := parseFlags([]string{"--config", "/tmp/custom.conf"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.Config != "/tmp/custom.conf" {
+		t.Errorf("config flag: got %q, want %q", opts.Config, "/tmp/custom.conf")
+	}
+}
+
+func TestConfigMerge(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "amc.conf")
+	content := "--save /tmp/mirrorlist\n--latest 3\n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	configTokens, err := loadConfigTokens(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	argv := []string{"--latest", "5"}
+	merged := append(append([]string{}, configTokens...), argv...)
+	opts, err := parseFlags(merged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.Save != "/tmp/mirrorlist" {
+		t.Errorf("save from config: got %q", opts.Save)
+	}
+	if opts.Latest != 5 {
+		t.Errorf("CLI should override config latest: got %d, want 5", opts.Latest)
 	}
 }

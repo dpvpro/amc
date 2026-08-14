@@ -20,19 +20,7 @@ func infof(opts *Options, format string, args ...any) {
 
 // run executes the amc pipeline and returns the exit code.
 func run(argv []string) int {
-	cfg, rest := extractConfigArg(argv)
-	var tokens []string
-	if cfg != "" {
-		cfgTokens, err := loadConfigTokens(cfg)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "amc: cannot read config %s: %v\n", cfg, err)
-			return 1
-		}
-		tokens = append(tokens, cfgTokens...)
-	}
-	tokens = append(tokens, rest...)
-
-	opts, err := parseFlags(tokens)
+	opts, err := parseFlags(argv)
 	if err != nil {
 		if hr, ok := err.(*helpRequested); ok {
 			fmt.Fprint(os.Stdout, hr.usage)
@@ -41,6 +29,28 @@ func run(argv []string) int {
 		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
 		return 2
 	}
+
+	configTokens, err := loadConfigTokens(opts.Config)
+	if err != nil {
+		if opts.Config != defaultConfigPath {
+			fmt.Fprintf(os.Stderr, "amc: cannot read config %s: %v\n", opts.Config, err)
+			return 1
+		}
+		configTokens = nil
+	}
+
+	merged := append(append([]string{}, configTokens...), argv...)
+
+	opts, err = parseFlags(merged)
+	if err != nil {
+		if hr, ok := err.(*helpRequested); ok {
+			fmt.Fprint(os.Stdout, hr.usage)
+			return 0
+		}
+		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
+		return 2
+	}
+
 	if opts.Sort != "" && !contains(sortChoices, opts.Sort) {
 		fmt.Fprintf(os.Stderr, "amc: invalid sort criterion %q (choose from %v)\n", opts.Sort, sortChoices)
 		return 2
