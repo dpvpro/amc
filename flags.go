@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/csv"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/spf13/pflag"
 )
 
 // Default values.
@@ -49,25 +50,6 @@ type Options struct {
 	IPv6              bool
 }
 
-// listValue collects repeated, comma-separated values into a slice.
-type listValue struct {
-	values *[]string
-}
-
-func (l listValue) String() string {
-	if l.values == nil {
-		return ""
-	}
-	return strings.Join(*l.values, ",")
-}
-
-func (l listValue) Set(v string) error {
-	for part := range strings.SplitSeq(v, ",") {
-		*l.values = append(*l.values, part)
-	}
-	return nil
-}
-
 // parseFlags builds the flag set and parses argv, returning the options.
 func parseFlags(argv []string) (*Options, error) {
 	opts := &Options{
@@ -78,8 +60,8 @@ func parseFlags(argv []string) (*Options, error) {
 		CompletionPercent: 100,
 	}
 
-	fs := flag.NewFlagSet("amc", flag.ContinueOnError)
-	// flag prints errors and usage itself; suppress that so this package
+	fs := pflag.NewFlagSet("amc", pflag.ContinueOnError)
+	// pflag prints errors and usage itself; suppress that so this package
 	// controls the exact output and exit codes.
 	fs.SetOutput(io.Discard)
 
@@ -98,14 +80,14 @@ func parseFlags(argv []string) (*Options, error) {
 
 	fs.Float64Var(&opts.Age, "age", 0, "only mirrors synchronized in the last n hours")
 	fs.Float64Var(&opts.Delay, "delay", 0, "only mirrors with a reported sync delay of n hours or less")
-	fs.Var(listValue{&opts.Countries}, "country", "restrict to these countries (name or code, comma-separated, repeatable)")
+	fs.StringSliceVar(&opts.Countries, "country", nil, "restrict to these countries (name or code, comma-separated, repeatable)")
 	fs.IntVar(&opts.Fastest, "fastest", 0, "return the n fastest mirrors")
-	fs.Var(listValue{&opts.Include}, "include", "include servers matching this regex (repeatable)")
-	fs.Var(listValue{&opts.Exclude}, "exclude", "exclude servers matching this regex (repeatable)")
+	fs.StringSliceVar(&opts.Include, "include", nil, "include servers matching this regex (repeatable)")
+	fs.StringSliceVar(&opts.Exclude, "exclude", nil, "exclude servers matching this regex (repeatable)")
 	fs.IntVar(&opts.Latest, "latest", 0, "limit to the n most recently synchronized mirrors")
 	fs.IntVar(&opts.Score, "score", 0, "limit to the n mirrors with the highest score")
 	fs.IntVar(&opts.Number, "number", 0, "return at most n mirrors")
-	fs.Var(listValue{&opts.Protocols}, "protocol", "match these protocols, comma-separated, repeatable")
+	fs.StringSliceVar(&opts.Protocols, "protocol", nil, "match these protocols, comma-separated, repeatable")
 	fs.Float64Var(&opts.CompletionPercent, "completion-percent", 100, "minimum completion percent [0-100]")
 	fs.BoolVar(&opts.Isos, "isos", false, "only mirrors that host ISOs")
 	fs.BoolVar(&opts.IPv4, "ipv4", false, "only mirrors that support IPv4")
@@ -113,7 +95,7 @@ func parseFlags(argv []string) (*Options, error) {
 
 	if err := fs.Parse(argv); err != nil {
 		usage := "Usage of amc:\n" + flagDefaults(fs)
-		if err == flag.ErrHelp {
+		if err == pflag.ErrHelp {
 			return nil, &helpRequested{usage: usage}
 		}
 		return nil, fmt.Errorf("%v\n%s", err, usage)
@@ -125,7 +107,7 @@ func parseFlags(argv []string) (*Options, error) {
 }
 
 // flagDefaults renders the flag help text.
-func flagDefaults(fs *flag.FlagSet) string {
+func flagDefaults(fs *pflag.FlagSet) string {
 	var b strings.Builder
 	fs.SetOutput(&b)
 	fs.PrintDefaults()
