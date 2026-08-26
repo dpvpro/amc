@@ -63,7 +63,7 @@ amc --info --latest 5
 | `--age FLOAT` | `0` | Only mirrors synchronized within the last *n* hours |
 | `--cache-timeout INT` | `300` | Seconds the mirror status data may be cached |
 | `--completion-percent FLOAT` | `100` | Minimum completion percent `[0-100]` |
-| `--config FILE` | *(none)* | Read options from a config file (see below) |
+| `--config FILE` | - | Read options from a config file (see below) |
 | `--connection-timeout INT` | `8` | Seconds to wait before a connection times out |
 | `--country LIST` | - | Restrict to countries (name or code, comma-separated or repeatable) |
 | `--delay FLOAT` | `0` | Only mirrors with a reported sync delay of *n* hours or less |
@@ -83,11 +83,12 @@ amc --info --latest 5
 | `--score INT` | `0` | Limit to the *n* mirrors with the highest score |
 | `--sort CRITERION` | - | Sort by `age`, `rate`, `country`, `score` or `delay` |
 | `--threads INT` | `8` | Number of parallel rating downloads (`1` = sequential) |
-| `--url URL` | `https://archlinux.org/mirrors/status/json/` | URL of the mirror status JSON |
+| `--url URL` | - | URL of the mirror status JSON (see below) |
 | `--verbose` | `false` | Print extra information to stderr |
 
 ### Notes
 
+- Default value for `--url` is `https://archlinux.org/mirrors/status/json/`.
 - `--sort rate` and `--fastest` measure download speed by fetching the
   `extra/os/x86_64/extra.db` repository database from each mirror. rsync
   mirrors are rated with the system `rsync` binary.
