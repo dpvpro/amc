@@ -23,12 +23,11 @@ func rateMirrors(mirrors []Mirror, opts *Options) {
 	if len(mirrors) == 0 {
 		return
 	}
-	workers := opts.Threads
 	infof(opts, "rating %d mirror(s) by download speed", len(mirrors))
 
 	jobs := make(chan int)
 	var wg sync.WaitGroup
-	for w := 0; w < workers; w++ {
+	for w := 0; w < opts.Threads; w++ {
 		wg.Go(func() {
 			for i := range jobs {
 				m := &mirrors[i]
@@ -70,7 +69,7 @@ func isRsync(mirrorURL string) bool {
 // bytes per second.
 func rateHTTP(ctx context.Context, mirrorURL string, opts *Options) (float64, float64, error) {
 	client := &http.Client{Timeout: time.Duration(opts.ConnectionTimeout) * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mirrorURL+dbSubpath, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mirrorURL + dbSubpath, nil)
 	if err != nil {
 		return 0, 0, err
 	}
