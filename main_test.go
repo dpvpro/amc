@@ -22,7 +22,9 @@ func loadFixture(t *testing.T) *MirrorStatus {
 	return &ms
 }
 
-func baseOpts() *Options { return &Options{CompletionPercent: 100} }
+func baseOpts() *Options {
+    return &Options{CompletionPercent: 100}
+}
 
 func mirror(url string) Mirror {
 	ls := "2026-08-12T03:50:00Z"
@@ -326,8 +328,8 @@ func TestConfigDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if opts.Config != defaultConfigPath {
-		t.Errorf("default config: got %q, want %q", opts.Config, defaultConfigPath)
+	if opts.Config != "" {
+		t.Errorf("default config: got %q, want empty (no implicit config)", opts.Config)
 	}
 }
 

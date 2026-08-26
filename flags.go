@@ -16,7 +16,6 @@ const (
 	defaultConnectionTimeout = 8
 	defaultDownloadTimeout   = 8
 	defaultCacheTimeout      = 300
-	defaultConfigPath        = "/etc/xdg/amc/amc.conf"
 )
 
 // Options holds all parsed command-line options.
@@ -76,7 +75,7 @@ func parseFlags(argv []string) (*Options, error) {
 	fs.BoolVar(&opts.Info, "info", false, "print mirror information instead of a mirror list")
 	fs.BoolVar(&opts.ListCountries, "list-countries", false, "list countries with a mirror count and exit")
 
-	fs.StringVar(&opts.Config, "config", defaultConfigPath, "read additional options from this config file")
+	fs.StringVar(&opts.Config, "config", "", "read options from this config file")
 
 	fs.Float64Var(&opts.Age, "age", 0, "only mirrors synchronized in the last n hours")
 	fs.Float64Var(&opts.Delay, "delay", 0, "only mirrors with a reported sync delay of n hours or less")

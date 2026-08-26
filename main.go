@@ -30,13 +30,13 @@ func run(argv []string) int {
 		return 2
 	}
 
-	configTokens, err := loadConfigTokens(opts.Config)
-	if err != nil {
-		if opts.Config != defaultConfigPath {
+	var configTokens []string
+	if opts.Config != "" {
+		configTokens, err = loadConfigTokens(opts.Config)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "amc: cannot read config %s: %v\n", opts.Config, err)
 			return 1
 		}
-		configTokens = nil
 	}
 
 	merged := append(append([]string{}, configTokens...), argv...)
