@@ -114,6 +114,9 @@ func parseFlags(argv []string) (*Options, error) {
 	if opts.Threads < 1 {
 		return nil, fmt.Errorf("invalid --threads value %d: must be at least 1", opts.Threads)
 	}
+	if fs.Changed("delay") {
+		opts.HasDelay = true
+	}
 	return opts, nil
 }
 

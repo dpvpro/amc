@@ -195,6 +195,55 @@ func TestSortCountryPriority(t *testing.T) {
 	})
 }
 
+func TestDelayFlagPresence(t *testing.T) {
+	for _, args := range [][]string{{"--delay", "5"}, {"--delay", "0"}} {
+		opts, err := parseFlags(args)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !opts.HasDelay {
+			t.Errorf("HasDelay: got false for %v, want true", args)
+		}
+	}
+	opts, err := parseFlags(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.HasDelay {
+		t.Error("HasDelay: got true without --delay, want false")
+	}
+}
+
+func TestFilterDelay(t *testing.T) {
+	ms := loadFixture(t)
+
+	opts := baseOpts()
+	opts.CompletionPercent = 0
+	opts.Delay = 0.001
+	opts.HasDelay = true
+	out, err := applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.de.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+	})
+
+	opts.HasDelay = false
+	out, err = applyFilters(ms.URLs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertUrls(t, out, []string{
+		"https://mirror.fr.archlinux.org/archlinux/",
+		"https://mirror.de.archlinux.org/archlinux/",
+		"https://mirror.us.archlinux.org/archlinux/",
+		"http://mirror.es.archlinux.org/archlinux/",
+	})
+}
+
 func TestFormatMirrorlist(t *testing.T) {
 	ms := loadFixture(t)
 	mirrors := ms.URLs[:2]
