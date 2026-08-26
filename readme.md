@@ -91,10 +91,67 @@ amc --info --latest 5
 - `--sort rate` and `--fastest` measure download speed by fetching the
   `extra/os/x86_64/extra.db` repository database from each mirror. rsync
   mirrors are rated with the system `rsync` binary.
-- `--sort country` honours the order of `--country`; a `*` in the list sets
-  the default rank for countries not listed explicitly, e.g.
-  `--country se,no,dk,fi --sort country`.
+- `--sort country` honours the order of `--country`: mirrors from the listed
+  countries come first in that exact order, followed by all other countries
+  alphabetically. For example, `--country se,no,dk,fi --sort country`
+  produces Sweden, Norway, Denmark, Finland, then the rest of the world.
+  Matching is case-insensitive and accepts both country names and two-letter
+  codes. A `*` in the list places the "everything else" group at that position
+  instead of at the end: `--country se,*,dk --sort country` yields Sweden
+  first, then all unlisted countries, then Denmark.
 - Filters are combined: a mirror must match *all* of them.
+
+## How options combine
+
+Options are applied in two stages: filters first, then sorting with limits.
+
+### Stage 1 — filters
+
+`--age`, `--delay`, `--country`, `--protocol`, `--completion-percent`,
+`--isos`, `--ipv4`, `--ipv6`, `--include` and `--exclude` run against the full
+mirror list and drop mirrors that do not match. A mirror must satisfy *all*
+active filters to survive. Filters never change the order of mirrors.
+
+### Stage 2 — sorting and limits
+
+The remaining mirrors are processed in a fixed order:
+
+```
+latest -> score -> fastest -> sort -> number
+```
+
+Each of `--latest`, `--score` and `--fastest` means "sort by a criterion, then
+keep the first *n* mirrors". Every option works on the output of the previous
+one, so the pool is narrowed step by step.
+
+| Option | What it does |
+| --- | --- |
+| `--latest N` | Sort by sync age (newest first), keep the *n* most recent |
+| `--score N` | Sort by score (highest first), keep the top *n* |
+| `--fastest N` | Measure download speed, sort by rate, keep the *n* fastest |
+| `--sort X` | Reorder the result by `age`, `rate`, `country`, `score` or `delay` |
+| `--number N` | Final cap: return at most *n* mirrors (does not sort) |
+
+### Examples
+
+- `--age 24 --latest 5` — of the mirrors synced within the last 24 hours,
+  keep the 5 most recently synchronized.
+- `--delay 5 --fastest 3` — of the mirrors with a sync delay of at most 5
+  hours, measure speed and keep the 3 fastest.
+- `--latest 5 --fastest 3` — the 3 fastest are chosen only from the 5 newest
+  mirrors, because `--latest` narrows the pool first.
+- `--latest 10 --score 5` — take the 10 newest, then the 5 with the highest
+  score (order matters: `--latest` runs before `--score`).
+- `--sort age --number 3` — sort by sync age, then keep the first 3.
+
+### `--fastest` and `--sort`
+
+- `--fastest 5` without `--sort` already returns the 5 fastest mirrors sorted
+  by speed.
+- `--fastest 5 --sort age` keeps the set of the 5 fastest mirrors but lists
+  them by sync age.
+- `--sort rate` without `--fastest` rates every mirror and sorts them by speed
+  but returns the whole list — pair it with `--number` to limit the output.
 
 ## Configuration file
 
