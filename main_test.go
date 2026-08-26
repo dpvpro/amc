@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -359,6 +360,30 @@ func TestParseFlagsError(t *testing.T) {
 		if _, err := parseFlags(args); err == nil {
 			t.Errorf("expected error for %v", args)
 		}
+	}
+}
+
+func TestCachePathFor(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", "/tmp/xdg")
+
+	if got := cachePathFor(defaultURL); got != "/tmp/xdg/amc/mirrorstatus.json" {
+		t.Errorf("default url: got %q, want %q", got, "/tmp/xdg/amc/mirrorstatus.json")
+	}
+
+	custom := "https://example.com/status.json"
+	name := base64.RawURLEncoding.EncodeToString([]byte(custom)) + ".json"
+	want := filepath.Join("/tmp/xdg/amc", name)
+	if got := cachePathFor(custom); got != want {
+		t.Errorf("custom url: got %q, want %q", got, want)
+	}
+}
+
+func TestCachePathForFallback(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", "")
+	t.Setenv("HOME", "/tmp/home")
+
+	if got := cachePathFor(defaultURL); got != "/tmp/home/.cache/amc/mirrorstatus.json" {
+		t.Errorf("fallback: got %q, want %q", got, "/tmp/home/.cache/amc/mirrorstatus.json")
 	}
 }
 

@@ -54,8 +54,8 @@ func parseLastSync(s string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("cannot parse last_sync %q", s)
 }
 
-// cachePathFor returns the cache file for the given status URL. The default
-// URL reuses the well-known name so other tools can find it.
+// cachePathFor returns the cache file for the given status URL. All cache
+// files live under $XDG_CACHE_HOME/amc.
 func cachePathFor(url string) string {
 	base := os.Getenv("XDG_CACHE_HOME")
 	if base == "" {
@@ -65,10 +65,10 @@ func cachePathFor(url string) string {
 			base = "."
 		}
 	}
-	if url == defaultURL {
-		return filepath.Join(base, "mirrorstatus.json")
+	name := "mirrorstatus.json"
+	if url != defaultURL {
+		name = base64.RawURLEncoding.EncodeToString([]byte(url)) + ".json"
 	}
-	name := base64.RawURLEncoding.EncodeToString([]byte(url)) + ".json"
 	return filepath.Join(base, "amc", name)
 }
 

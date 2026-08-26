@@ -192,10 +192,10 @@ The service runs with `ProtectSystem=strict` and only reads
 
 ## Caching
 
-The mirror status JSON is cached so repeated runs stay fast. The cache lives
-in `$XDG_CACHE_HOME` (or `~/.cache`) as `mirrorstatus.json` and is reused
-within `--cache-timeout` seconds. Custom `--url` values are cached under
-`amc/` with an encoded file name.
+The mirror status JSON is cached so repeated runs stay fast. All cache files
+live in `$XDG_CACHE_HOME/amc/` (or `~/.cache/amc/`): the default URL is cached
+as `amc/mirrorstatus.json`, and custom `--url` values under the same directory
+with an encoded file name. A cache is reused within `--cache-timeout` seconds.
 
 ## Exit codes
 
