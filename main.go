@@ -1,15 +1,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"sort"
+
+	"github.com/spf13/pflag"
 )
 
 var logger = log.New(os.Stderr, "", log.LstdFlags)
 
-var sortChoices = []string{"age", "rate", "country", "score", "delay"}
 
 // infof logs to stderr when --verbose is set.
 func infof(opts *Options, format string, args ...any) {
@@ -19,11 +21,11 @@ func infof(opts *Options, format string, args ...any) {
 }
 
 // run executes the amc pipeline and returns the exit code.
-func run(argv []string) int {
-	opts, err := parseFlags(argv)
+func run(cliTokens []string) int {
+	opts, err := parseFlags(cliTokens)
 	if err != nil {
-		if hr, ok := err.(*helpRequested); ok {
-			fmt.Fprint(os.Stdout, hr.usage)
+		if errors.Is(err, pflag.ErrHelp) {
+			fmt.Fprint(os.Stdout, usageText())
 			return 0
 		}
 		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
@@ -39,17 +41,19 @@ func run(argv []string) int {
 		}
 	}
 
-	merged := append(append([]string{}, configTokens...), argv...)
+	mergedTokens := append(append([]string{}, configTokens...), cliTokens...)
 
-	opts, err = parseFlags(merged)
+	opts, err = parseFlags(mergedTokens)
 	if err != nil {
-		if hr, ok := err.(*helpRequested); ok {
-			fmt.Fprint(os.Stdout, hr.usage)
+		if errors.Is(err, pflag.ErrHelp) {
+			fmt.Fprint(os.Stdout, usageText())
 			return 0
 		}
 		fmt.Fprintf(os.Stderr, "amc: %v\n", err)
 		return 2
 	}
+
+	var sortChoices = []string{"age", "rate", "country", "score", "delay"}
 
 	if opts.Sort != "" && !contains(sortChoices, opts.Sort) {
 		fmt.Fprintf(os.Stderr, "amc: invalid sort criterion %q (choose from %v)\n", opts.Sort, sortChoices)
@@ -117,7 +121,7 @@ func run(argv []string) int {
 		return 1
 	}
 
-	output := formatMirrorlist(status, mirrors, retrieved, opts, argv)
+	output := formatMirrorlist(status, mirrors, retrieved, opts, cliTokens)
 	if opts.Save != "" {
 		if err := os.WriteFile(opts.Save, []byte(output), 0o644); err != nil {
 			fmt.Fprintf(os.Stderr, "amc: %v\n", err)

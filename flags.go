@@ -49,16 +49,19 @@ type Options struct {
 	IPv6              bool
 }
 
-// parseFlags builds the flag set and parses argv, returning the options.
-func parseFlags(argv []string) (*Options, error) {
-	opts := &Options{
+// defaultOptions returns the options with their default values.
+func defaultOptions() *Options {
+	return &Options{
 		ConnectionTimeout: defaultConnectionTimeout,
 		DownloadTimeout:   defaultDownloadTimeout,
 		CacheTimeout:      defaultCacheTimeout,
 		URL:               defaultURL,
 		CompletionPercent: 100,
 	}
+}
 
+// newFlagSet builds the flag set bound to opts.
+func newFlagSet(opts *Options) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("amc", pflag.ContinueOnError)
 	// pflag prints errors and usage itself; suppress that so this package
 	// controls the exact output and exit codes.
@@ -92,17 +95,28 @@ func parseFlags(argv []string) (*Options, error) {
 	fs.BoolVar(&opts.IPv4, "ipv4", false, "only mirrors that support IPv4")
 	fs.BoolVar(&opts.IPv6, "ipv6", false, "only mirrors that support IPv6")
 
+	return fs
+}
+
+// parseFlags builds the flag set and parses argv, returning the options.
+func parseFlags(argv []string) (*Options, error) {
+	opts := defaultOptions()
+	fs := newFlagSet(opts)
 	if err := fs.Parse(argv); err != nil {
-		usage := "Usage of amc:\n" + flagDefaults(fs)
 		if err == pflag.ErrHelp {
-			return nil, &helpRequested{usage: usage}
+			return nil, pflag.ErrHelp
 		}
-		return nil, fmt.Errorf("%v\n%s", err, usage)
+		return nil, fmt.Errorf("%v\n%s", err, usageText())
 	}
 	if fs.NArg() > 0 {
 		return nil, fmt.Errorf("unexpected argument: %s", fs.Arg(0))
 	}
 	return opts, nil
+}
+
+// usageText renders the amc help text.
+func usageText() string {
+	return "Usage of amc:\n" + flagDefaults(newFlagSet(defaultOptions()))
 }
 
 // flagDefaults renders the flag help text.
@@ -113,11 +127,6 @@ func flagDefaults(fs *pflag.FlagSet) string {
 	fs.SetOutput(io.Discard)
 	return b.String()
 }
-
-// helpRequested signals a clean exit after printing usage.
-type helpRequested struct{ usage string }
-
-func (e *helpRequested) Error() string { return "help requested" }
 
 // loadConfigTokens reads a config file: one flag per line, "#" comments and
 // quoted values are supported.
