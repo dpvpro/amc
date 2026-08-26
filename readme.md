@@ -82,7 +82,7 @@ amc --info --latest 5
 | `--save FILE` | - | Write the mirrorlist to this path instead of stdout |
 | `--score INT` | `0` | Limit to the *n* mirrors with the highest score |
 | `--sort CRITERION` | - | Sort by `age`, `rate`, `country`, `score` or `delay` |
-| `--threads INT` | `8` | Number of parallel rating downloads (`0` = sequential) |
+| `--threads INT` | `8` | Number of parallel rating downloads (`1` = sequential) |
 | `--url URL` | `https://archlinux.org/mirrors/status/json/` | URL of the mirror status JSON |
 | `--verbose` | `false` | Print extra information to stderr |
 

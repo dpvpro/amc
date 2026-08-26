@@ -303,6 +303,14 @@ func TestParseFlagsError(t *testing.T) {
 	if _, err := parseFlags([]string{"positional"}); err == nil {
 		t.Error("expected error for positional argument")
 	}
+	for _, args := range [][]string{
+		{"--threads", "0"},
+		{"--threads", "-3"},
+	} {
+		if _, err := parseFlags(args); err == nil {
+			t.Errorf("expected error for %v", args)
+		}
+	}
 }
 
 func TestLoadConfigTokens(t *testing.T) {

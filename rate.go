@@ -24,9 +24,6 @@ func rateMirrors(mirrors []Mirror, opts *Options) {
 		return
 	}
 	workers := opts.Threads
-	if workers <= 0 {
-		workers = 1
-	}
 	infof(opts, "rating %d mirror(s) by download speed", len(mirrors))
 
 	jobs := make(chan int)
