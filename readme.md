@@ -1,6 +1,6 @@
 # Arch Mirrors Checker (AMC)
 
-Golang reimplementation of [Reflector](https://wiki.archlinux.org/title/Reflector): fetch the [Arch Linux mirror status](https://archlinux.org/mirrors/status/json/), filter the most up-to-date mirrors, rate them by download speed, and write a pacman mirrorlist.
+Reimplementation of [Reflector](https://wiki.archlinux.org/title/Reflector) on Golang. Fetch the [Arch Linux mirror status](https://archlinux.org/mirrors/status/json/), filter the most up-to-date mirrors, rate them by download speed, and write a pacman mirrorlist.
 
 ## Features
 
@@ -14,7 +14,7 @@ Golang reimplementation of [Reflector](https://wiki.archlinux.org/title/Reflecto
 
 ## Installation
 
-Requires Go 1.26+i. AMC use the `rsync` binary for rating rsync mirrors.
+Requires Go 1.26+. AMC use the `rsync` binary for rating rsync mirrors.
 
 ### Manual
 
@@ -86,21 +86,7 @@ amc --info --latest 5
 | `--url URL` | - | URL of the mirror status JSON (see below) |
 | `--verbose` | `false` | Print extra information to stderr |
 
-### Notes
-
-- `--url` default value is `https://archlinux.org/mirrors/status/json/`.
-- `--sort rate` and `--fastest` measure download speed by fetching the
-  `extra/os/x86_64/extra.db` repository database from each mirror. rsync
-  mirrors are rated with the system `rsync` binary.
-- `--sort country` honours the order of `--country`: mirrors from the listed
-  countries come first in that exact order, followed by all other countries
-  alphabetically. For example, `--country se,no,dk,fi --sort country`
-  produces Sweden, Norway, Denmark, Finland, then the rest of the world.
-  Matching is case-insensitive and accepts both country names and two-letter
-  codes. A `*` in the list places the "everything else" group at that position
-  instead of at the end: `--country se,*,dk --sort country` yields Sweden
-  first, then all unlisted countries, then Denmark.
-- Filters are combined: a mirror must match all of them.
+> For `--url` option default value is `https://archlinux.org/mirrors/status/json/`.
 
 ## How options combine
 
@@ -145,24 +131,39 @@ one, so the pool is narrowed step by step.
   score (order matters: `--latest` runs before `--score`).
 - `--sort age --number 3` — sort by sync age, then keep the first 3.
 
-### `--fastest` and `--sort`
+### Note about `--fastest` and `--sort rate` options
 
-- `--fastest 5` without `--sort` already returns the 5 fastest mirrors sorted
-  by speed.
-- `--fastest 5 --sort age` keeps the set of the 5 fastest mirrors but lists
-  them by sync age.
-- `--sort rate` without `--fastest` rates every mirror and sorts them by speed
-  but returns the whole list. Pair it with `--number` to limit the output.
+Options `--sort rate` and `--fastest` measure download speed by fetching the `extra/os/x86_64/extra.db` repository database from each mirror.
+
+Both options works similarly, but they differ in what happens to the result:
+
+| Command | Measures speed | Sorts by speed | Limits result |
+| --- | --- | --- | --- |
+| `--sort rate` | yes | yes | no |
+| `--sort rate --number 5` | yes | yes | yes (first 5) |
+| `--fastest 5` | yes | yes | yes (first 5) |
+
+- `--sort rate` alone rates every mirror and sorts them by speed but returns
+  the **whole list** — with hundreds of mirrors you usually want to pair it
+  with `--number`, e.g. `--sort rate --number 5`.
+- `--fastest N` is a shorthand for "measure speed, sort by speed, keep the
+  N fastest" and is equivalent to `--sort rate --number N` in a single flag.
+- `--fastest N --sort X` keeps the **set** of the N fastest mirrors but
+  **orders** them by X: `--fastest 5 --sort age` lists the 5 fastest mirrors
+  by sync age instead of by speed.
+
+
+### Note about `--country` option
+
+Option `--sort country` honours the order of `--country`: mirrors from the listed countries come first in that exact order, followed by all other countries alphabetically. For example, `--country se,no,dk,fi --sort country` produces Sweden, Norway, Denmark, Finland, then the rest of the world.
+
+Matching is case-insensitive and accepts both country names and two-letter codes. A `*` in the list places the "everything else" group at that position instead of at the end: `--country se,*,dk --sort country` yields Sweden first, then all unlisted countries, then Denmark.
 
 ## Configuration file
 
-AMC reads a config file passed with `--config`. The file contains valid
-AMC command-line options, one per line. Empty lines and lines beginning
-with `#` are ignored, and values may be quoted. Options in the file are
-merged with the command line; command line arguments override file values.
+AMC reads a config file passed with `--config`. Default location config path is `/etc/xdg/amc/amc.conf`. The file contains valid AMC command-line options, one per line. Empty lines and lines beginning with `#` are ignored, and values may be quoted. Options in the file are merged with the command line. Command line arguments override file values.
 
 ```text
-# /etc/xdg/amc/amc.conf
 --save /etc/pacman.d/mirrorlist
 --protocol https
 --country Russia,Sweden,Finland
@@ -193,10 +194,7 @@ The service runs with `ProtectSystem=strict` and only reads
 
 ## Caching
 
-The mirror status JSON is cached so repeated runs stay fast. All cache files
-live in `$XDG_CACHE_HOME/amc/` (or `~/.cache/amc/`)i. The default URL is cached
-as `amc/mirrorstatus.json`, and custom `--url` values under the same directory
-with an encoded file name. A cache is reused within `--cache-timeout` seconds.
+The mirror status JSON is cached so repeated runs stay fast. All cache files live in `$XDG_CACHE_HOME/amc/` (or `~/.cache/amc/`). The default URL is cached as `amc/mirrorstatus.json`, and custom `--url` values under the same directory with an encoded file name. A cache is reused within `--cache-timeout` seconds.
 
 ## Exit codes
 
