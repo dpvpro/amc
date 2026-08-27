@@ -105,7 +105,7 @@ func rateRSync(ctx context.Context, mirrorURL string, opts *Options) (float64, f
 	cmd := exec.CommandContext(ctx, "rsync",
 		"-avL", "--no-h", "--no-motd",
 		fmt.Sprintf("--contimeout=%d", opts.ConnectionTimeout),
-		mirrorURL+dbSubpath,
+		mirrorURL + dbSubpath,
 		tmp+string(filepath.Separator),
 	)
 	cmd.Stdout = io.Discard

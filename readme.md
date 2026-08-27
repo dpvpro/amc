@@ -1,6 +1,6 @@
 # Arch Mirrors Checker (AMC)
 
-A fast Go reimplementation of [Reflector](https://wiki.archlinux.org/title/Reflector): fetch the [Arch Linux mirror status](https://archlinux.org/mirrors/status/json/), filter the most up-to-date mirrors, rate them by download speed, and write a pacman mirrorlist.
+Golang reimplementation of [Reflector](https://wiki.archlinux.org/title/Reflector): fetch the [Arch Linux mirror status](https://archlinux.org/mirrors/status/json/), filter the most up-to-date mirrors, rate them by download speed, and write a pacman mirrorlist.
 
 ## Features
 
@@ -14,8 +14,9 @@ A fast Go reimplementation of [Reflector](https://wiki.archlinux.org/title/Refle
 
 ## Installation
 
-Requires Go 1.26+ and the `rsync` binary for rating rsync mirrors.
+Requires Go 1.26+i. AMC use the `rsync` binary for rating rsync mirrors.
 
+### Manual
 
 ```sh
 git clone https://github.com/dpvpro/amc.git
@@ -24,12 +25,11 @@ go build -o amc .
 sudo install -m755 amc /usr/local/bin/amc
 ```
 
-or
+### AUR
 
 ```sh
 yay -S amc
 ```
-
 
 ## Usage
 
@@ -37,7 +37,7 @@ yay -S amc
 amc [options]
 ```
 
-Without options, `amc` prints the full mirrorlist to stdout.
+Without options, AMC prints the full mirrorlist to stdout.
 
 ```sh
 # The five most recently synchronized HTTPS mirrors, sorted by speed
@@ -88,7 +88,7 @@ amc --info --latest 5
 
 ### Notes
 
-- Default value for `--url` is `https://archlinux.org/mirrors/status/json/`.
+- `--url` default value is `https://archlinux.org/mirrors/status/json/`.
 - `--sort rate` and `--fastest` measure download speed by fetching the
   `extra/os/x86_64/extra.db` repository database from each mirror. rsync
   mirrors are rated with the system `rsync` binary.
@@ -100,7 +100,7 @@ amc --info --latest 5
   codes. A `*` in the list places the "everything else" group at that position
   instead of at the end: `--country se,*,dk --sort country` yields Sweden
   first, then all unlisted countries, then Denmark.
-- Filters are combined: a mirror must match *all* of them.
+- Filters are combined: a mirror must match all of them.
 
 ## How options combine
 
@@ -110,7 +110,7 @@ Options are applied in two stages: filters first, then sorting with limits.
 
 `--age`, `--delay`, `--country`, `--protocol`, `--completion-percent`,
 `--isos`, `--ipv4`, `--ipv6`, `--include` and `--exclude` run against the full
-mirror list and drop mirrors that do not match. A mirror must satisfy *all*
+mirror list and drop mirrors that do not match. A mirror must satisfy all
 active filters to survive. Filters never change the order of mirrors.
 
 ### Stage 2 — sorting and limits
@@ -122,16 +122,16 @@ latest -> score -> fastest -> sort -> number
 ```
 
 Each of `--latest`, `--score` and `--fastest` means "sort by a criterion, then
-keep the first *n* mirrors". Every option works on the output of the previous
+keep the first N mirrors". Every option works on the output of the previous
 one, so the pool is narrowed step by step.
 
 | Option | What it does |
 | --- | --- |
-| `--latest N` | Sort by sync age (newest first), keep the *n* most recent |
-| `--score N` | Sort by score (highest first), keep the top *n* |
-| `--fastest N` | Measure download speed, sort by rate, keep the *n* fastest |
+| `--latest N` | Sort by sync age (newest first), keep the N most recent |
+| `--score N` | Sort by score (highest first), keep the top N |
+| `--fastest N` | Measure download speed, sort by rate, keep the N fastest |
 | `--sort X` | Reorder the result by `age`, `rate`, `country`, `score` or `delay` |
-| `--number N` | Final cap: return at most *n* mirrors (does not sort) |
+| `--number N` | Return at most N mirrors (does not sort) |
 
 ### Examples
 
@@ -152,12 +152,12 @@ one, so the pool is narrowed step by step.
 - `--fastest 5 --sort age` keeps the set of the 5 fastest mirrors but lists
   them by sync age.
 - `--sort rate` without `--fastest` rates every mirror and sorts them by speed
-  but returns the whole list — pair it with `--number` to limit the output.
+  but returns the whole list. Pair it with `--number` to limit the output.
 
 ## Configuration file
 
-`amc` reads a config file passed with `--config`. The file contains valid
-`amc` command-line options, one per line. Empty lines and lines beginning
+AMC reads a config file passed with `--config`. The file contains valid
+AMC command-line options, one per line. Empty lines and lines beginning
 with `#` are ignored, and values may be quoted. Options in the file are
 merged with the command line; command line arguments override file values.
 
@@ -172,7 +172,7 @@ merged with the command line; command line arguments override file values.
 
 ## SystemD
 
-`amc` ships a oneshot service and a weekly timer for automatic mirrorlist
+AMC ships a oneshot service and a weekly timer for automatic mirrorlist
 updates. Install the provided units and the configuration:
 
 ```sh
@@ -194,7 +194,7 @@ The service runs with `ProtectSystem=strict` and only reads
 ## Caching
 
 The mirror status JSON is cached so repeated runs stay fast. All cache files
-live in `$XDG_CACHE_HOME/amc/` (or `~/.cache/amc/`): the default URL is cached
+live in `$XDG_CACHE_HOME/amc/` (or `~/.cache/amc/`)i. The default URL is cached
 as `amc/mirrorstatus.json`, and custom `--url` values under the same directory
 with an encoded file name. A cache is reused within `--cache-timeout` seconds.
 
